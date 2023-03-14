@@ -1,6 +1,7 @@
 package web_copy
 
 import (
+	"log"
 	"net/http"
 )
 
@@ -15,6 +16,7 @@ type Server interface {
 
 type HTTPServer struct {
 	router
+	mdls []Middleware
 }
 
 func NewHTTPServer() *HTTPServer {
@@ -23,13 +25,44 @@ func NewHTTPServer() *HTTPServer {
 	}
 }
 
+func (s *HTTPServer) Use(mdls ...Middleware) {
+	if s.mdls == nil {
+		s.mdls = mdls
+		return
+	}
+	s.mdls = append(s.mdls, mdls...)
+}
+
 func (s *HTTPServer) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	ctx := &Context{
 		Req:  request,
 		Resp: writer,
 	}
 
-	s.serve(ctx)
+	root := s.serve
+	for i := len(s.mdls) - 1; i >= 0; i-- {
+		root = s.mdls[i](root)
+	}
+
+	var m = Middleware(func(next HandlerFunc) HandlerFunc {
+		return func(ctx *Context) {
+			next(ctx)
+			s.flushResq(ctx)
+		}
+	})
+
+	root = m(root)
+	root(ctx)
+}
+
+func (s *HTTPServer) flushResq(ctx *Context) {
+	if ctx.RespStatusCode > 0 {
+		ctx.Resp.WriteHeader(ctx.RespStatusCode)
+	}
+	_, err := ctx.Resp.Write(ctx.RespData)
+	if err != nil {
+		log.Fatalln("写响应失败", err)
+	}
 }
 
 func (s *HTTPServer) Get(addr string, handlerFunc HandlerFunc) {
@@ -47,9 +80,12 @@ func (s *HTTPServer) Start(addr string) error {
 func (s *HTTPServer) serve(ctx *Context) {
 	mi, ok := s.findRouter(ctx.Req.Method, ctx.Req.URL.Path)
 	if !ok || mi.n == nil || mi.n.handlerFunc == nil {
+		ctx.RespStatusCode = 404
+		ctx.RespData = []byte("404 not found")
 		return
 	}
 
+	ctx.MatchedRoute = mi.n.route
 	ctx.paramPath = mi.paramPath
 	mi.n.handlerFunc(ctx)
 }

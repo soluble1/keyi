@@ -1,6 +1,7 @@
 package web_copy
 
 import (
+	"fmt"
 	"strings"
 )
 
@@ -15,38 +16,46 @@ func newRouter() router {
 }
 
 func (r *router) addRouter(method string, path string, handlerFunc HandlerFunc) {
-	if r.trees == nil {
-		r.trees = make(map[string]*node)
+	if path == "" {
+		panic("web：路由为空")
 	}
-
-	if path[0] != '/' && path[len(path)-1] == '/' {
-		panic("web：路由错误")
+	if path[0] != '/' {
+		panic("web：路由必须以 / 开头")
+	}
+	if path != "/" && path[len(path)-1] == '/' {
+		panic("web：路由不能以 / 结尾")
 	}
 
 	root, ok := r.trees[method]
 	if !ok {
-		r.trees[method] = &node{
+		root = &node{
 			path: "/",
 		}
-		root = r.trees[method]
+		r.trees[method] = root
 	}
 
 	if path == "/" {
+		if root.handlerFunc != nil {
+			panic("web：该路由已经被注册了")
+		}
 		root.handlerFunc = handlerFunc
+		root.route = path
 		return
 	}
 
 	ages := strings.Split(path[1:], "/")
 	for _, v := range ages {
-		if root.childNode == nil {
-			root.childNode = make(map[string]*node)
+		if v == "" {
+			panic(fmt.Sprintf("web:非法路由。不允许使用 //a/b, /a//b 之类的路由, [%s]", path))
 		}
-		tem := root.childOrCreate(v)
-		root.childNode[v] = tem
-		root = tem
+		root = root.childOrCreate(v)
+	}
+	if root.handlerFunc != nil {
+		panic(fmt.Sprintf("web:路由冲突，[%s]", path))
 	}
 
 	root.handlerFunc = handlerFunc
+	root.route = path
 }
 
 func (r *router) findRouter(method string, path string) (*matchInfo, bool) {
@@ -77,10 +86,6 @@ func (r *router) findRouter(method string, path string) (*matchInfo, bool) {
 }
 
 func (n *node) childOrCreate(path string) *node {
-	if path == "" {
-		panic("web：非法路由")
-	}
-
 	if path == "*" {
 		if n.paramPath != nil {
 			panic("web：不允许同时注册通配符路由和参数路由")
@@ -109,35 +114,35 @@ func (n *node) childOrCreate(path string) *node {
 		return n.paramPath
 	}
 
+	if n.childNode == nil {
+		n.childNode = make(map[string]*node)
+	}
 	next, ok := n.childNode[path]
 	if !ok {
 		next = &node{
 			path: path,
 		}
+		n.childNode[path] = next
 	}
 
 	return next
 }
 
 func (n *node) childOf(path string) (*node, bool, bool) {
-	if path == "" {
-		return nil, false, false
-	}
-
 	if n.childNode == nil {
 		if n.paramPath != nil {
 			return n.paramPath, true, true
 		}
-		return n.starPath, false, n.starPath == nil
+		return n.starPath, false, n.starPath != nil
 	}
 	child, ok := n.childNode[path]
 	if !ok {
 		if n.paramPath != nil {
 			return n.paramPath, true, true
 		}
-		return n.starPath, false, n.starPath == nil
+		return n.starPath, false, n.starPath != nil
 	}
-	return child, false, true
+	return child, false, ok
 }
 
 type node struct {
@@ -149,6 +154,9 @@ type node struct {
 	starPath *node
 	// 参数路由
 	paramPath *node
+
+	// 到达该节点的路由
+	route string
 }
 
 type matchInfo struct {
