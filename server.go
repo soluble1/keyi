@@ -14,15 +14,30 @@ type Server interface {
 	addRouter(method string, path string, handlerFunc HandlerFunc)
 }
 
+type HTTPServerOption func(server *HTTPServer)
+
 type HTTPServer struct {
 	router
-	mdls []Middleware
+	mdls           []Middleware
+	templateEngine TemplateEngine
 }
 
-func NewHTTPServer() *HTTPServer {
-	return &HTTPServer{
+func WithGoTemplateEngine(engine TemplateEngine) HTTPServerOption {
+	return func(server *HTTPServer) {
+		server.templateEngine = engine
+	}
+}
+
+func NewHTTPServer(opts ...HTTPServerOption) *HTTPServer {
+	s := &HTTPServer{
 		router: newRouter(),
 	}
+
+	for _, opt := range opts {
+		opt(s)
+	}
+
+	return s
 }
 
 func (s *HTTPServer) Use(mdls ...Middleware) {
@@ -35,8 +50,9 @@ func (s *HTTPServer) Use(mdls ...Middleware) {
 
 func (s *HTTPServer) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	ctx := &Context{
-		Req:  request,
-		Resp: writer,
+		Req:            request,
+		Resp:           writer,
+		templateEngine: s.templateEngine,
 	}
 
 	root := s.serve
