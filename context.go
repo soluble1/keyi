@@ -26,6 +26,9 @@ type Context struct {
 	// 缓存响应信息，最后刷新出去
 	RespStatusCode int
 	RespData       []byte
+
+	// 存放session等用户数据
+	UserValues map[string]any
 }
 
 // Render 渲染模板
