@@ -1,11 +1,11 @@
 package recovery
 
 import (
+	"github.com/soluble1/mweb"
+	"github.com/soluble1/mweb/middleware/access_log"
+	"github.com/soluble1/mweb/middleware/err_handle"
 	"log"
 	"testing"
-	"web_copy"
-	"web_copy/middleware/access_log"
-	"web_copy/middleware/err_handle"
 )
 
 func TestRecovery(t *testing.T) {

@@ -1,6 +1,6 @@
 package err_handle
 
-import "web_copy"
+import "github.com/soluble1/mweb"
 
 type MiddlewareHandler struct {
 	errPage map[int][]byte

@@ -2,8 +2,8 @@ package access_log
 
 import (
 	"encoding/json"
+	"github.com/soluble1/mweb"
 	"log"
-	"web_copy"
 )
 
 type MiddlewareBuilder struct {

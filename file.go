@@ -18,6 +18,7 @@ type FileUploader struct {
 
 // Handle
 // 1.	文件，目标文件，err := ctx.Req.FormFile("对应文件在表单中字段名")
+// FormFile 返回所提供的表单键的第一个文件。如果有必要，FormFile 会调用 ParseMultipartForm 和 ParseForm。
 // 2.	目标文件, err := os.OpenFile(f.DstPathFunc(目标文件), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o666)
 // 3.	_, err = io.CopyBuffer(dst, src, nil)
 func (f *FileUploader) Handle() HandlerFunc {

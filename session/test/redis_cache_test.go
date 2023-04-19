@@ -2,22 +2,30 @@ package test
 
 import (
 	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
 	mweb "github.com/soluble1/mweb"
 	"github.com/soluble1/mweb/session"
 	"github.com/soluble1/mweb/session/cookie"
-	"github.com/soluble1/mweb/session/memory"
+	mcache "github.com/soluble1/mweb/session/redis_cache"
 	"log"
 	"net/http"
 	"testing"
 	"time"
 )
 
-func TestCookie(t *testing.T) {
+func TestRedisCacheSession(t *testing.T) {
 	server := mweb.NewHTTPServer()
+
+	client := redis.NewClient(&redis.Options{
+		Addr:     "120.46.196.48:6379",
+		Password: "",
+		DB:       0,
+	})
+	s := mcache.NewRedisStore(30*time.Minute, client)
 
 	manager := session.Manager{
 		SessCtxKey: "my_session",
-		Store:      memory.NewStore(30 * time.Minute),
+		Store:      s,
 		Propagator: cookie.NewPropagator("sessId", func(p *cookie.Propagator) {
 			cookie.WithCookieOpt(func(cookie *http.Cookie) {
 				// cookie.HttpOnly = true, js脚本将无法读取到cookie信息
@@ -29,14 +37,15 @@ func TestCookie(t *testing.T) {
 	server.Post("/login", func(ctx *mweb.Context) {
 		ctx.RespData = []byte("this is /login")
 
-		id := uuid.New()
-		sess, err := manager.InitSession(ctx, id.String())
+		id := uuid.New().String()
+		sess, err := manager.InitSession(ctx, id)
 		if err != nil {
 			ctx.RespStatusCode = http.StatusInternalServerError
 			return
 		}
-
-		err = sess.Set(ctx.Req.Context(), "myKey", "xiaoLongRen")
+		err = sess.Set(ctx.Req.Context(), "xiao", "xiao long ren")
+		err = sess.Set(ctx.Req.Context(), "ma", "ma jun da shi")
+		err = sess.Set(ctx.Req.Context(), "key", id)
 		if err != nil {
 			ctx.RespStatusCode = http.StatusInternalServerError
 			return
@@ -50,7 +59,10 @@ func TestCookie(t *testing.T) {
 			return
 		}
 
-		val, err := sess.Get(ctx.Req.Context(), "myKey")
+		val, err := sess.Get(ctx.Req.Context(), "key")
+		if err != nil {
+			log.Println(err)
+		}
 		ctx.RespData = []byte(val)
 		ctx.RespStatusCode = 200
 	})

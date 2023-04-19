@@ -1,7 +1,7 @@
 package recovery
 
 import (
-	"web_copy"
+	"github.com/soluble1/mweb"
 )
 
 type MiddlewareHandler struct {

@@ -5,19 +5,19 @@ import (
 	mweb "github.com/soluble1/mweb"
 	"github.com/soluble1/mweb/session"
 	"github.com/soluble1/mweb/session/cookie"
-	"github.com/soluble1/mweb/session/memory"
+	"github.com/soluble1/mweb/session/local_cache"
 	"log"
 	"net/http"
 	"testing"
 	"time"
 )
 
-func TestCookie(t *testing.T) {
+func TestLocalCacheSession(t *testing.T) {
 	server := mweb.NewHTTPServer()
 
 	manager := session.Manager{
 		SessCtxKey: "my_session",
-		Store:      memory.NewStore(30 * time.Minute),
+		Store:      local_cache.NewStore(30 * time.Minute),
 		Propagator: cookie.NewPropagator("sessId", func(p *cookie.Propagator) {
 			cookie.WithCookieOpt(func(cookie *http.Cookie) {
 				// cookie.HttpOnly = true, js脚本将无法读取到cookie信息
@@ -26,17 +26,17 @@ func TestCookie(t *testing.T) {
 		}),
 	}
 
-	server.Post("/login", func(ctx *mweb.Context) {
+	server.Get("/login", func(ctx *mweb.Context) {
 		ctx.RespData = []byte("this is /login")
 
-		id := uuid.New()
-		sess, err := manager.InitSession(ctx, id.String())
+		id := uuid.New().String()
+		sess, err := manager.InitSession(ctx, id)
 		if err != nil {
 			ctx.RespStatusCode = http.StatusInternalServerError
 			return
 		}
 
-		err = sess.Set(ctx.Req.Context(), "myKey", "xiaoLongRen")
+		err = sess.Set(ctx.Req.Context(), "myKey", id)
 		if err != nil {
 			ctx.RespStatusCode = http.StatusInternalServerError
 			return

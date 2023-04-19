@@ -1,8 +1,8 @@
 package access_log
 
 import (
+	"github.com/soluble1/mweb"
 	"testing"
-	"web_copy"
 )
 
 func TestAccessLog(t *testing.T) {

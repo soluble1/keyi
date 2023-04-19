@@ -1,6 +1,6 @@
 package session
 
-import "web_copy"
+import mweb "github.com/soluble1/mweb"
 
 type Manager struct {
 	Store
@@ -12,7 +12,7 @@ type Manager struct {
 // InitSession 创建一个session
 // 先根据id创一个session再注入到响应中
 // Generate Inject
-func (m *Manager) InitSession(ctx *web_copy.Context, id string) (Session, error) {
+func (m *Manager) InitSession(ctx *mweb.Context, id string) (Session, error) {
 	sess, err := m.Store.Generate(ctx.Req.Context(), id)
 	if err != nil {
 		return nil, err
@@ -25,7 +25,7 @@ func (m *Manager) InitSession(ctx *web_copy.Context, id string) (Session, error)
 
 // GetSession 获取session
 // 先尝试从缓存中拿
-func (m *Manager) GetSession(ctx *web_copy.Context) (Session, error) {
+func (m *Manager) GetSession(ctx *mweb.Context) (Session, error) {
 	if ctx.UserValues == nil {
 		ctx.UserValues = make(map[string]any, 10)
 	}
@@ -53,7 +53,7 @@ func (m *Manager) GetSession(ctx *web_copy.Context) (Session, error) {
 // RefreshSession 刷新session
 // 先得到session再刷新过期时间然后重新注入到响应中
 // GetSession	Refresh		Inject
-func (m *Manager) RefreshSession(ctx *web_copy.Context) (Session, error) {
+func (m *Manager) RefreshSession(ctx *mweb.Context) (Session, error) {
 	sess, err := m.GetSession(ctx)
 	if err != nil {
 		return nil, err
@@ -71,7 +71,7 @@ func (m *Manager) RefreshSession(ctx *web_copy.Context) (Session, error) {
 }
 
 // RemoveSession 删除 Session
-func (m *Manager) RemoveSession(ctx *web_copy.Context) error {
+func (m *Manager) RemoveSession(ctx *mweb.Context) error {
 	sess, err := m.GetSession(ctx)
 	if err != nil {
 		return err

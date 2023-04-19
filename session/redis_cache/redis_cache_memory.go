@@ -1,9 +1,11 @@
-package memory
+package local_cache
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
-	"github.com/patrickmn/go-cache"
+	"github.com/redis/go-redis/v9"
+	"github.com/soluble1/mcache"
 	"github.com/soluble1/mweb/session"
 	"sync"
 	"time"
@@ -11,13 +13,13 @@ import (
 
 type Store struct {
 	mutex   sync.RWMutex
-	cache   *cache.Cache
+	cache   cache.Cache
 	expired time.Duration
 }
 
-func NewStore(expired time.Duration) *Store {
+func NewRedisStore(expired time.Duration, r redis.Cmdable) *Store {
 	return &Store{
-		cache:   cache.New(expired, time.Second),
+		cache:   cache.NewRedisCache(r),
 		expired: expired,
 	}
 }
@@ -29,35 +31,50 @@ func (s *Store) Generate(ctx context.Context, id string) (session.Session, error
 		id:   id,
 		data: make(map[string]string),
 	}
-	s.cache.Set(sess.ID(), sess, s.expired)
+	se, err := json.Marshal(sess)
+	if err != nil {
+		return nil, err
+	}
+	err = s.cache.Set(ctx, sess.ID(), se, s.expired)
+	if err != nil {
+		return nil, err
+	}
 	return sess, nil
 }
 
 func (s *Store) Get(ctx context.Context, id string) (session.Session, error) {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
-	sess, ok := s.cache.Get(id)
-	if ok {
-		return sess.(*memorySession), nil
+	se, err := s.cache.Get(ctx, id)
+	sess := &memorySession{}
+	_ = json.Unmarshal([]byte(se.(string)), sess)
+	if err == nil {
+		return sess, nil
 	}
-	return nil, errors.New("web：session不存在")
+	return nil, err
 }
 
 func (s *Store) Remove(ctx context.Context, id string) error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	s.cache.Delete(id)
+	err := s.cache.Delete(ctx, id)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 func (s *Store) Refresh(ctx context.Context, id string) error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	sess, ok := s.cache.Get(id)
-	if !ok {
-		return errors.New("web：session不存在")
+	sess, err := s.cache.Get(ctx, id)
+	if err != nil {
+		return err
 	}
-	s.cache.Set(sess.(*memorySession).ID(), sess, s.expired)
+	err = s.cache.Set(ctx, sess.(*memorySession).ID(), sess, s.expired)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

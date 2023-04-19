@@ -1,9 +1,9 @@
 package err_handle
 
 import (
+	"github.com/soluble1/mweb"
+	"github.com/soluble1/mweb/middleware/access_log"
 	"testing"
-	"web_copy"
-	"web_copy/middleware/access_log"
 )
 
 func TestErrHandle(t *testing.T) {
