@@ -1,4 +1,4 @@
-package web_copy
+package mweb
 
 import (
 	"encoding/json"

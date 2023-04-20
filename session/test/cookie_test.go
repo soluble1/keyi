@@ -2,7 +2,7 @@ package test
 
 import (
 	"github.com/google/uuid"
-	mweb "github.com/soluble1/mweb"
+	"github.com/soluble1/mweb"
 	"github.com/soluble1/mweb/session"
 	"github.com/soluble1/mweb/session/cookie"
 	"github.com/soluble1/mweb/session/memory"

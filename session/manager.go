@@ -1,6 +1,6 @@
 package session
 
-import mweb "github.com/soluble1/mweb"
+import "github.com/soluble1/mweb"
 
 type Manager struct {
 	Store

@@ -31,9 +31,9 @@ type accessLog struct {
 	Path       string
 }
 
-func (m *MiddlewareBuilder) Build() web_copy.Middleware {
-	return func(next web_copy.HandlerFunc) web_copy.HandlerFunc {
-		return func(ctx *web_copy.Context) {
+func (m *MiddlewareBuilder) Build() mweb.Middleware {
+	return func(next mweb.HandlerFunc) mweb.HandlerFunc {
+		return func(ctx *mweb.Context) {
 			defer func() {
 				accLog := &accessLog{
 					Host:       ctx.Req.Host,

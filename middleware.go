@@ -1,3 +1,3 @@
-package web_copy
+package mweb
 
 type Middleware func(next HandlerFunc) HandlerFunc
