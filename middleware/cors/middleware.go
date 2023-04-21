@@ -9,6 +9,12 @@ type MiddlewareBuilder struct {
 	AllowOrigin string
 }
 
+func NewCorsHandel(origin string) *MiddlewareBuilder {
+	return &MiddlewareBuilder{
+		AllowOrigin: origin,
+	}
+}
+
 func (m MiddlewareBuilder) Build() mweb.Middleware {
 	return func(next mweb.HandlerFunc) mweb.HandlerFunc {
 		return func(ctx *mweb.Context) {
